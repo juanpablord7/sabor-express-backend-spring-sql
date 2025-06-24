@@ -94,29 +94,6 @@
             <scope>compile</scope>
         </dependency>
 
-        <!-- Open AI (Chat GPT) -->
-        <!-- https://mvnrepository.com/artifact/org.springframework.ai/spring-ai-starter-model-openai -->
-        <!-- <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-model-openai</artifactId>
-            <version>1.0.0</version>
-        </dependency> -->
-
-        <!-- Gemini (Google) -->
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-model-vertex-ai-gemini</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>33.2.0-jre</version> <!-- Usa una versión estable y reciente -->
-        </dependency>
-
-
-
-
         <!-- Facilitar getters y setters -->
         <dependency>
             <groupId>org.projectlombok</groupId>

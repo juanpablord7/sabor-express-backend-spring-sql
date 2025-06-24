@@ -3,11 +3,9 @@ package com.miempresa.servicecategory.controller;
 import com.miempresa.servicecategory.dto.CategoryPatchRequest;
 import com.miempresa.servicecategory.dto.CategoryRequest;
 import com.miempresa.servicecategory.model.CategoryModel;
-import com.miempresa.servicecategory.service.AiService;
 import com.miempresa.servicecategory.service.CategoryService;
 import com.miempresa.servicecategory.utils.converter.ObjectConverter;
 import jakarta.validation.Valid;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,11 +16,9 @@ import java.util.Map;
 @RequestMapping("/category")
 public class CategoryController {
     private final CategoryService categoryService;
-    private final AiService aiService;
 
-    public CategoryController(CategoryService categoryService, AiService aiService) {
+    public CategoryController(CategoryService categoryService) {
         this.categoryService = categoryService;
-        this.aiService = aiService;
     }
 
     //Endpoint: GET /api/category & /api/category?name=pizzas api/category?name=pizzas&image=img.png
@@ -52,18 +48,7 @@ public class CategoryController {
             return ResponseEntity.ok(response);
         }
 
-        //IA (Chat GPT)
-        /*
-        ChatResponse responseGpt = aiService.chatbot();
-        System.out.println(responseGpt);
-        */
-
-        //IA (Gemini)
-        ChatResponse responseGpt = aiService.gemini();
-        System.out.println(responseGpt);
-
-
-        return ResponseEntity.ok(responseGpt);
+        return ResponseEntity.ok(category);
 
     }
 
