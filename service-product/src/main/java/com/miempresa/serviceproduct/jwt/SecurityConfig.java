@@ -1,4 +1,4 @@
-package com.miempresa.servicecategory.jwt;
+package com.miempresa.serviceproduct.jwt;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,13 +30,13 @@ public class SecurityConfig {
                         authorize ->
                                     authorize
                                             // Permitir GET en /category/**
-                                            .requestMatchers(HttpMethod.GET, "/category/**").permitAll()
+                                            .requestMatchers(HttpMethod.GET, "/product/**").permitAll()
 
                                             // Requiere autenticación para otros métodos en /category/**
-                                            .requestMatchers(HttpMethod.POST, "/category/**").hasAuthority("manageProduct")
-                                            .requestMatchers(HttpMethod.PUT, "/category/**").hasAuthority("manageProduct")
-                                            .requestMatchers(HttpMethod.PATCH, "/category/**").hasAuthority("manageProduct")
-                                            .requestMatchers(HttpMethod.DELETE, "/category/**").hasAuthority("manageProduct")
+                                            .requestMatchers(HttpMethod.POST, "/product/**").hasAuthority("manageProduct")
+                                            .requestMatchers(HttpMethod.PUT, "/product/**").hasAuthority("manageProduct")
+                                            .requestMatchers(HttpMethod.PATCH, "/product/**").hasAuthority("manageProduct")
+                                            .requestMatchers(HttpMethod.DELETE, "/product/**").hasAuthority("manageProduct")
 
                                             .anyRequest().authenticated()
                 )

@@ -1,18 +1,16 @@
-package com.miempresa.serviceuser.jwt;
+package com.miempresa.servicecategory.jwt;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.miempresa.serviceuser.dto.client.RoleResponse;
-import com.miempresa.serviceuser.model.User;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -76,35 +74,14 @@ public class JwtService {
         return extractExpiration(token).before(new Date());
     }
 
-    public boolean isTokenValid(String token){
-        return !isTokenExpired(token);
+    public boolean isTokenValid(String token) {
+        try {
+            extractAllClaims(token); // Si expira, lanza ExpiredJwtException
+            return true;
+        } catch (ExpiredJwtException e) {
+            throw e; // o return false, depende de tu diseño
+        } catch (JwtException e) {
+            return false;
+        }
     }
-
-    public String generateToken(UserDetails userDetails, RoleResponse role) {
-        Map<String, Object> extraClaims = new HashMap<>();
-
-        extraClaims.put("roleId", role.getId());
-        extraClaims.put("roleName", role.getName());
-        extraClaims.put("isDefault", role.isDefault());
-
-        List<String> permissions = new ArrayList<>();
-        if (role.isManageUser()) permissions.add("manageUser");
-        if (role.isManageOrder()) permissions.add("manageOrder");
-        if (role.isManageProduct()) permissions.add("manageProduct");
-        if (role.isManageRole()) permissions.add("manageRole");
-        if (role.isPromoteAll()) permissions.add("promoteAll");
-        if (role.isEditPassword()) permissions.add("editPassword");
-
-        extraClaims.put("permissions", permissions);
-
-        return Jwts
-                .builder()
-                .claims(extraClaims)
-                .subject(userDetails.getUsername())
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + (jwtExpiration * 1000)))
-                .signWith(getSignInKey())
-                .compact();
-    }
-
 }

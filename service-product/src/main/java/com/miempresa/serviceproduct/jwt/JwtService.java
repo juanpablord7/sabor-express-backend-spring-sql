@@ -1,8 +1,10 @@
-package com.miempresa.servicecategory.jwt;
+package com.miempresa.serviceproduct.jwt;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -13,7 +15,8 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.security.Key;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -38,7 +41,7 @@ public class JwtService {
         return Jwts.parser()
                 .verifyWith((SecretKey) getSignInKey())
                 .build()
-                .parseSignedClaims(token)
+                .parseSignedClaims(token)  // throw ExpiredJwtException if is expired
                 .getPayload();
     }
 
@@ -72,8 +75,14 @@ public class JwtService {
         return extractExpiration(token).before(new Date());
     }
 
-    public boolean isTokenValid(String token){
-        return !isTokenExpired(token);
+    public boolean isTokenValid(String token) {
+        try {
+            extractAllClaims(token); // Si expira, lanza ExpiredJwtException
+            return true;
+        } catch (ExpiredJwtException e) {
+            throw e; // o return false, depende de tu diseño
+        } catch (JwtException e) {
+            return false;
+        }
     }
-
 }

@@ -1,7 +1,7 @@
 package com.miempresa.serviceimage.controller;
 
-import com.miempresa.apigateway.dto.Image;
-import com.miempresa.apigateway.service.ImageService;
+import com.miempresa.serviceimage.dto.Image;
+import com.miempresa.serviceimage.service.ImageService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -11,13 +11,18 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 
 @RestController
-@RequestMapping("/api/image")
+@RequestMapping("/image")
 public class ImageController {
 
     private final ImageService imageService;
 
     public ImageController(ImageService imageService) {
         this.imageService = imageService;
+    }
+
+    private String extractPath(HttpServletRequest request) {
+        String fullPath = request.getRequestURI();
+        return fullPath.replaceFirst("^/image/?", "");
     }
 
     @GetMapping("/**")
@@ -30,23 +35,23 @@ public class ImageController {
                 .body(image.getContent());
     }
 
-    @PostMapping("/{folder}/{filename}")
+    @PostMapping(value = "/**", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> postImage(
-            @RequestParam("file") MultipartFile file,
-            @PathVariable String folder,
-            @PathVariable String filename
+            HttpServletRequest request,
+            @RequestParam("file") MultipartFile file
     ) {
-        imageService.saveImage(folder + "/" + filename, file);
+        String path = extractPath(request);
+        imageService.saveImage(path, file);
         return ResponseEntity.ok("Image uploaded successfully");
     }
 
-    @PutMapping(value = "/{folder}/{filename}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping(value = "/**", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> putImage(
-            @RequestParam("file") MultipartFile file,
-            @PathVariable String folder,
-            @PathVariable String filename
+            HttpServletRequest request,
+            @RequestParam("file") MultipartFile file
     ) {
-        imageService.replaceImage(folder + "/" + filename, file);
+        String path = extractPath(request);
+        imageService.saveImage(path, file);
         return ResponseEntity.ok("Image replaced successfully");
     }
 
@@ -56,7 +61,7 @@ public class ImageController {
             HttpServletRequest request
     ) {
         String path = extractPath(request);
-        imageService.replaceImage(path, file);
+        imageService.saveImage(path, file);
         return ResponseEntity.ok("Image patched successfully");
     }
 
@@ -67,8 +72,5 @@ public class ImageController {
         return ResponseEntity.ok("Image deleted successfully");
     }
 
-    private String extractPath(HttpServletRequest request) {
-        String fullPath = request.getRequestURI();
-        return fullPath.replaceFirst("^/api/image/?", "");
-    }
+
 }

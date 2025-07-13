@@ -1,36 +1,44 @@
 package com.miempresa.serviceorder.controller;
 
-import com.miempresa.serviceorder.dto.request.OrderRequest;
-import com.miempresa.serviceorder.service.OrderService;
+import com.miempresa.serviceorder.dto.request.state.StateRequest;
+import com.miempresa.serviceorder.model.Order;
+import com.miempresa.serviceorder.service.OrderManagmentService;
 import feign.Body;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/order/me")
-public class OrderController {
-    private final OrderService orderService;
+@RequestMapping("/order")
+public class OrderManagController {
+    private final OrderManagmentService orderManagService;
 
-    public OrderController(OrderService orderService) {
-        this.orderService = orderService;
+    public OrderManagController(OrderManagmentService orderManagService) {
+        this.orderManagService = orderManagService;
     }
 
     @GetMapping
-    public ResponseEntity<?> getMyOrders(){
+    public ResponseEntity<?> getOrders(@RequestParam(defaultValue = "0") int page,
+                                       @RequestParam(defaultValue = "10") int limit,
+                                       @RequestParam(required = false) Long state){
 
-        return ResponseEntity.ok("Exito");
+        return ResponseEntity.ok(
+                orderManagService.findAllOrder(page, limit, state));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getOrderById(@PathVariable Long id){
 
-        return ResponseEntity.ok("Exito");
+        Order order = orderManagService.findById(id);
+        return ResponseEntity.ok(order);
     }
 
-    @PostMapping()
-    public ResponseEntity<?> postOrder(@Valid @RequestBody OrderRequest order){
-        return ResponseEntity.ok(orderService.createOrder(order));
-    }
+    @PostMapping("/{id}/state")
+    public ResponseEntity<?> updateOrderState(
+            @PathVariable Long id,
+            @RequestBody(required = false) StateRequest request){
 
+        Order order = orderManagService.updateOrderState(id, request.getState());
+        return ResponseEntity.ok(order);
+    }
 }

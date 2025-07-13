@@ -1,7 +1,6 @@
-package com.miempresa.serviceuser.repository;
+package com.miempresa.servicerole.repository;
 
-import com.miempresa.serviceuser.model.Role;
-import jakarta.persistence.Id;
+import com.miempresa.servicerole.model.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

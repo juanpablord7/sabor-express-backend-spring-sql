@@ -1,13 +1,13 @@
 package com.miempresa.serviceproduct.utils.converter;
 
-import com.miempresa.serviceproduct.model.ProductModel;
+import com.miempresa.serviceproduct.model.Product;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class ObjectConverter {
 
-    public static Map<String, Object> ProductToJson(ProductModel product, String fields){
+    public static Map<String, Object> ProductToJson(Product product, String fields){
         String[] fieldList = fields.split(",");
 
         Map<String, Object> json = new HashMap<>();
@@ -27,9 +27,6 @@ public class ObjectConverter {
                     break;
                 case "price":
                     json.put("price", product.getPrice());
-                    break;
-                case "categoryid":
-                    json.put("categoryid", product.getCategoryId());
                     break;
                 case "category":
                     json.put("category", product.getCategory());

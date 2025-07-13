@@ -1,4 +1,4 @@
-package com.miempresa.serviceorder.dto.request;
+package com.miempresa.serviceorder.dto.request.ordermanag;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

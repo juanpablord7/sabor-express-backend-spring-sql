@@ -1,13 +1,13 @@
 package com.miempresa.serviceuser.utils.converter;
 
-import com.miempresa.serviceuser.model.UserModel;
+import com.miempresa.serviceuser.model.User;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class ObjectConverter {
 
-    public static Map<String, Object> UserToJson(UserModel user, String fields) {
+    public static Map<String, Object> UserToJson(User user, String fields) {
         String[] fieldList = fields.split(",");
 
         Map<String, Object> json = new HashMap<>();
@@ -25,11 +25,17 @@ public class ObjectConverter {
                 case "username":
                     json.put("username", user.getUsername());
                     break;
-                case "name":
-                    json.put("name", user.getName());
+                case "fullname":
+                    json.put("fullname", user.getFullname());
                     break;
-                case "password":
-                    json.put("password", user.getPassword());
+                case "email":
+                    json.put("email", user.getEmail());
+                    break;
+                case "created_at":
+                    json.put("createdAt", user.getCreatedAt());
+                    break;
+                case "updated_at":
+                    json.put("updatedAt", user.getUpdatedAt());
                     break;
                 case "role":
                     json.put("role", user.getRole());

@@ -1,5 +1,6 @@
-package com.miempresa.servicecategory.jwt;
+package com.miempresa.serviceorder.jwt;
 
+import com.miempresa.serviceorder.jwt.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -29,14 +30,17 @@ public class SecurityConfig {
                 .authorizeHttpRequests(
                         authorize ->
                                     authorize
-                                            // Permitir GET en /category/**
-                                            .requestMatchers(HttpMethod.GET, "/category/**").permitAll()
+                                            .requestMatchers(HttpMethod.GET, "/order/me/**").authenticated()
+                                            .requestMatchers(HttpMethod.POST, "/order/me/**").authenticated()
+                                            .requestMatchers(HttpMethod.PUT, "/order/me/**").authenticated()
+                                            .requestMatchers(HttpMethod.PATCH, "/order/me/**").authenticated()
+                                            .requestMatchers(HttpMethod.DELETE, "/order/me/**").authenticated()
 
-                                            // Requiere autenticación para otros métodos en /category/**
-                                            .requestMatchers(HttpMethod.POST, "/category/**").hasAuthority("manageProduct")
-                                            .requestMatchers(HttpMethod.PUT, "/category/**").hasAuthority("manageProduct")
-                                            .requestMatchers(HttpMethod.PATCH, "/category/**").hasAuthority("manageProduct")
-                                            .requestMatchers(HttpMethod.DELETE, "/category/**").hasAuthority("manageProduct")
+                                            .requestMatchers(HttpMethod.GET, "/order/**").hasAuthority("manageOrder")
+                                            .requestMatchers(HttpMethod.POST, "/order/**").hasAuthority("manageOrder")
+                                            .requestMatchers(HttpMethod.PUT, "/order/**").hasAuthority("manageOrder")
+                                            .requestMatchers(HttpMethod.PATCH, "/order/**").hasAuthority("manageOrder")
+                                            .requestMatchers(HttpMethod.DELETE, "/order/**").hasAuthority("manageOrder")
 
                                             .anyRequest().authenticated()
                 )

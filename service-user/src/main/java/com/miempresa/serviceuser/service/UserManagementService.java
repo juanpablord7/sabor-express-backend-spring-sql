@@ -1,63 +1,98 @@
 package com.miempresa.serviceuser.service;
 
+import com.miempresa.serviceuser.client.RoleClient;
 import com.miempresa.serviceuser.dto.PaginatedResponse;
-import com.miempresa.serviceuser.dto.UserRequest;
-import com.miempresa.serviceuser.enums.RoleEnum;
-import com.miempresa.serviceuser.model.Role;
+import com.miempresa.serviceuser.dto.management.UserManagementRequest;
 import com.miempresa.serviceuser.model.User;
-import com.miempresa.serviceuser.repository.RoleRepository;
 import com.miempresa.serviceuser.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
-import java.util.Optional;
-import java.util.function.Function;
+import java.util.List;
 
 @Service
-public class UserManagmentService {
+public class UserManagementService {
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
+    private final RoleClient roleClient;
 
-    public UserManagmentService(UserRepository userRepository, RoleRepository roleRepository) {
+    public UserManagementService(UserRepository userRepository, PasswordEncoder passwordEncoder, RoleClient roleClient) {
         this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.roleClient = roleClient;
     }
 
-    public void validateCredentials(Function<Role, Boolean> permissionExtractor){
+    public void validateCredentials(String permission){
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        if(!auth.isAuthenticated()) {
-            throw new AccessDeniedException("You don't have the credentials for this operation");
+        if(auth == null || !auth.isAuthenticated()) {
+            throw new AccessDeniedException("You must be authenticated to perform this action");
+        }
+
+        List<String> permissionsClaim = auth.getAuthorities()
+                .stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
+
+        boolean hasPermission = permissionsClaim.contains(permission);
+
+        if (!hasPermission) {
+            throw new AccessDeniedException("You don't have permission: " + permission);
+        }
+    }
+
+    public Boolean promote(Long actualRole, Long newRole){
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (!auth.isAuthenticated()) {
+            throw new AccessDeniedException("You must be authenticated to perform this action.");
+        }
+
+        if(actualRole.equals(newRole)){
+            throw new IllegalArgumentException("The User already has this role: " + actualRole);
         }
 
         String username = auth.getName();
 
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Not found any role whit username: " + username));
+        User currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
 
-        Role userRole = roleRepository.findById(user.getRole())
-                .orElseThrow(() ->
-                        new IllegalArgumentException("The role of the username doesn't exit any more. Id of the role: " + user.getRole()));
+        Long defaultRole = roleClient.getDefaultRole();
 
-        Boolean hasPermission = permissionExtractor.apply(userRole);
-        if(hasPermission == null || !hasPermission){
-            throw new AccessDeniedException("");
+        //If the role to promote is equal to the role from the user who sends the request
+        //Or the role to promote is the default role
+        if (currentUser.getRole().equals(newRole) || newRole.equals(defaultRole)) {
+            if(actualRole.equals(defaultRole)){ //The user to promote has the default role (user)
+                return true;
+
+                // If a user is being downgraded to "user",
+                // the one making the request must have the same role as the user's current role.
+                // (e.g. a "chef" can only downgrade another "chef")
+            }else if (newRole.equals(defaultRole) && currentUser.getRole().equals(actualRole)){
+                return true;
+            }
+        }
+
+        //If the user who send the request has the credentials to promote to any role
+        try {
+            validateCredentials("promoteAll");
+            return true;
+
+        }catch(AccessDeniedException e) {
+            throw new AccessDeniedException("You Don't have the permission to promote to that role");
         }
     }
 
 
-    public PaginatedResponse<User> findAllUsers(Integer page, Integer limit, RoleEnum role){
-        //Solo para admins
-        validateCredentials(Role::getManageUser);
-
+    public PaginatedResponse<User> findAllUsers(Integer page, Integer limit, Long role){
         Pageable pageable = PageRequest.of(page, limit);
 
         Page<User> usersPage;
@@ -78,71 +113,41 @@ public class UserManagmentService {
     }
 
     public User findById(Long id){
-        validateCredentials(Role::getManageUser);
-
         return userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Not find any user with id: " + id));
     }
 
     public User findByUsername(String username){
-        validateCredentials(Role::getManageUser);
-
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("Not find any user with username: " + username));
     }
 
-    public User updateUser(Long id, UserRequest input){
-
-        validateCredentials(Role::getManageUser);
-
+    public User updateUser(Long id, UserManagementRequest input){
         User actualUser = findById(id);
 
-        //Validate doesn't exist the new username
-        String username = input.getUsername();
-        //if want to change the username
-        if(!actualUser.getUsername().equals(username)) {
-            Optional<User> aux = userRepository.findByUsername(username));
-
-            if(aux.isPresent()){
-                throw new IllegalArgumentException("The username: " + username + "already exists");
-            }else{
-                actualUser.setUsername(username);
-            }
-        }
-
-        if(!input.getPassword().isBlank()){
+        if(input.getPassword() != null && !input.getPassword().isBlank()){
             //Validate the credentials to change passwrod
             try{
-                validateCredentials(Role::getEditPassword);
+                validateCredentials("editPassword");
 
             }catch(AccessDeniedException e){
-                throw new AccessDeniedException("Don't have the permission to change password");
+                throw new AccessDeniedException("You don't have the permission to change password");
             }
 
-            actualUser.setPassword(input.getPassword());
+            actualUser.setPassword(passwordEncoder.encode(input.getPassword()));
         }
 
-        if(!input.getRole())
+        //Promote the Role
+        if(input.getRole() != null){
+            if(promote(actualUser.getRole(), input.getRole())){
+                actualUser.setRole(input.getRole());
+            }else{
+                throw new AccessDeniedException("You Don't have the permission to promote to that role");
+            }
+        }
 
-        //Change the attributes
-        actualUser.setFullname(input.getFullname());
         actualUser.setUpdatedAt(new Date(System.currentTimeMillis()));
 
         return userRepository.save(actualUser);
-    }
-
-
-
-
-    public void deleteById(Long id){
-        validateCredentials(Role::getManageUser);
-
-        userRepository.deleteById(id);
-    }
-
-    public void deleteByUsername(String username){
-        validateCredentials(Role::getManageUser);
-
-        userRepository.deleteByUsername(username);
     }
 }

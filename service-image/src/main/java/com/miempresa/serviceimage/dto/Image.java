@@ -1,4 +1,4 @@
-package com.miempresa.apigateway.dto;
+package com.miempresa.serviceimage.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

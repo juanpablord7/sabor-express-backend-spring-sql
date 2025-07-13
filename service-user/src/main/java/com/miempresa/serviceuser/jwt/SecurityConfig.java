@@ -17,11 +17,9 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-    private final AuthenticationProvider authenticationProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    public SecurityConfig(AuthenticationProvider authenticationProvider, JwtAuthenticationFilter jwtAuthenticationFilter) {
-        this.authenticationProvider = authenticationProvider;
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
@@ -30,13 +28,18 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(
                         authorize ->
-                                    authorize.requestMatchers("/**").hasRole("USER")
+                                    authorize
+                                            .requestMatchers("/user/auth/**").permitAll()
+                                            .requestMatchers("/user/me/**").authenticated()
+                                            .requestMatchers("/user/**").hasAuthority("manageUser")
+                                            //Bloquear rutas por rol:
+                                            //.requestMatchers("/user/**").hasRole("USER")
+                                            //.requestMatchers("/user/**").hasAnyRole("ADMIN", "USER")
                                             .anyRequest().authenticated()
                 )
                 .sessionManagement(
                         sessionManagement ->
                                 sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
@@ -45,7 +48,10 @@ public class SecurityConfig {
     CorsConfigurationSource corsConfigurationSource(){
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of("http://localhost:8005"));
+        //Al pasar a produccion cambiar por el dominio de la web (es el mismo api-gateway)
+        //configuration.setAllowedOrigins(List.of("http://localhost:8080"));
+        configuration.setAllowedOrigins(List.of("*"));
+
         configuration.setAllowedMethods(List.of("GET", "POST"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
 

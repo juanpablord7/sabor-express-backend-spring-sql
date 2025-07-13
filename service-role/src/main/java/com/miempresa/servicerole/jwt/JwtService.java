@@ -1,8 +1,10 @@
-package com.miempresa.serviceproduct.jwt;
+package com.miempresa.servicerole.jwt;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -73,8 +75,14 @@ public class JwtService {
         return extractExpiration(token).before(new Date());
     }
 
-    public boolean isTokenValid(String token){
-        return !isTokenExpired(token);
+    public boolean isTokenValid(String token) {
+        try {
+            extractAllClaims(token); // Si expira, lanza ExpiredJwtException
+            return true;
+        } catch (ExpiredJwtException e) {
+            throw e; // o return false, depende de tu diseño
+        } catch (JwtException e) {
+            return false;
+        }
     }
-
 }

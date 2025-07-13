@@ -1,21 +1,22 @@
 package com.miempresa.serviceuser.dto;
 
-import com.miempresa.serviceuser.enums.RoleEnum;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.springframework.data.mongodb.core.mapping.Field;
 
 @Data
-@NoArgsConstructor
+@Builder
 @AllArgsConstructor
 public class UserRequest {
     @NotBlank
     private String username;
 
     @NotBlank
-    private String name;
+    private String fullname;
+
+    @NotBlank
+    private String email;
 
     @NotBlank
     private String password;

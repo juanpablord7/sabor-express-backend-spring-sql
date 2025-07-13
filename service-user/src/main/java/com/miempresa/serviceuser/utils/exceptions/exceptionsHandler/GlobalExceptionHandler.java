@@ -1,10 +1,11 @@
 package com.miempresa.serviceuser.utils.exceptions.exceptionsHandler;
 
-import com.miempresa.serviceproduct.utils.exceptions.customExceptions.UnsafeInputException;
+import com.miempresa.serviceuser.utils.exceptions.customExceptions.UnsafeInputException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -27,6 +28,17 @@ public class GlobalExceptionHandler {
         );
 
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Object> handlerIllegalAccess(AccessDeniedException ex){
+        String message = ex.getMessage();
+        if (message == null || message.isBlank()) {
+            message = "You don't have the credentials for this operation.";
+        }
+        return new ResponseEntity<>(
+                Map.of("error",  message),
+                HttpStatus.BAD_REQUEST);
     }
 
     // Manejo de errores personalizados tipo IllegalArgumentException

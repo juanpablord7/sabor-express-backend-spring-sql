@@ -1,4 +1,4 @@
-package com.miempresa.servicecategory.jwt;
+package com.miempresa.serviceorder.jwt;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
@@ -20,14 +20,12 @@ import java.util.List;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+    private final JwtService jwtService;
     private final HandlerExceptionResolver handlerExceptionResolver;
 
-    private final JwtService jwtService;
-
-    public JwtAuthenticationFilter(HandlerExceptionResolver handlerExceptionResolver,
-                                   JwtService jwtService) {
-        this.handlerExceptionResolver = handlerExceptionResolver;
+    public JwtAuthenticationFilter(JwtService jwtService, HandlerExceptionResolver handlerExceptionResolver) {
         this.jwtService = jwtService;
+        this.handlerExceptionResolver = handlerExceptionResolver;
     }
 
     @Override
@@ -72,9 +70,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             response.setContentType("application/json");
             response.getWriter().write("{\"error\": \"Token expired\"}");
         } catch (Exception ex) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"Unauthorized\"}");
+            handlerExceptionResolver.resolveException(request, response, null, ex);
         }
     }
 }

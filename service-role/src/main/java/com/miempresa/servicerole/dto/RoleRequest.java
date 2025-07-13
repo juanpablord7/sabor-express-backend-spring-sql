@@ -1,5 +1,6 @@
-package com.miempresa.serviceuser.dto.role;
+package com.miempresa.servicerole.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -16,6 +17,7 @@ public class RoleRequest {
     @Size(min = 2, message = "The name must have at least 2 letters")
     private String name;
 
+    //The field will be named like "default"
     private boolean isDefault;
 
     // Product (C U D)
@@ -35,4 +37,10 @@ public class RoleRequest {
 
     // Edit Password
     private boolean editPassword;
+
+    // Chef
+    private boolean chef;
+
+    // Delivery
+    private boolean delivery;
 }

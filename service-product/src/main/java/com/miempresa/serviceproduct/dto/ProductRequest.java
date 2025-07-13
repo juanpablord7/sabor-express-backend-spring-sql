@@ -1,12 +1,9 @@
 package com.miempresa.serviceproduct.dto;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.bson.types.ObjectId;
 
-import java.util.Map;
 
 @Data
 @AllArgsConstructor
@@ -20,7 +17,7 @@ public class ProductRequest {
     private Double price;
 
     @PositiveOrZero(message = "Category_id must be a positive number")
-    private Long categoryId;
+    private Long category;
 
     @NotBlank(message = "Don't provided image")
     @Size(min = 4, message = "The image must contain at least 4 letters")

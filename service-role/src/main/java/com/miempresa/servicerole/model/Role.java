@@ -1,4 +1,4 @@
-package com.miempresa.serviceuser.model;
+package com.miempresa.servicerole.model;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.*;
@@ -14,8 +14,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "role")
 @Entity
+@Table(name = "role")
 public class Role {
 
     @Id
@@ -28,24 +28,29 @@ public class Role {
     private String name;
 
     //Check if is the default role
-    private Boolean isDefault;
+    private boolean isDefault;
 
     // Product (C U D)
-    private Boolean manageProduct;
+    private boolean manageProduct;
 
     // Order (R U D)
-    private Boolean manageOrder;
+    private boolean manageOrder;
 
     // User (R U D)
-    private Boolean manageUser;
+    private boolean manageUser;
 
     // Role (C R U D)
-    private Boolean manageRole;
+    private boolean manageRole;
 
     // Promote roles
-    private Boolean promoteAll;
+    private boolean promoteAll;
 
     // Edit Password
-    private Boolean editPassword;
+    private boolean editPassword;
 
+    // Chef
+    private boolean chef;
+
+    // Delivery
+    private boolean delivery;
 }

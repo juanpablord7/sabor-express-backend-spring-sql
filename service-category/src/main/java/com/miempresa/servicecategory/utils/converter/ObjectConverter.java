@@ -1,13 +1,13 @@
 package com.miempresa.servicecategory.utils.converter;
 
-import com.miempresa.servicecategory.model.CategoryModel;
+import com.miempresa.servicecategory.model.Category;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class ObjectConverter {
 
-    public static Map<String, Object> CategoryToJson (CategoryModel category, String fields){
+    public static Map<String, Object> CategoryToJson (Category category, String fields){
         String[] fieldList = fields.split(",");
 
         Map<String, Object> json = new HashMap<>();
@@ -20,7 +20,7 @@ public class ObjectConverter {
             //Buscar cada campo a que atributo se refiere y agregarlo al json
             switch (field.trim()) {
                 case "id":
-                    json.put("id", category.getCategoryId());
+                    json.put("id", category.getId());
                     break;
                 case "name":
                     json.put("name", category.getName());

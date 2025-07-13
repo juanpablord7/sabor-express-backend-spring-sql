@@ -1,8 +1,8 @@
-package com.miempresa.serviceuser.jwt;
+package com.miempresa.servicecategory.jwt;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -29,11 +29,15 @@ public class SecurityConfig {
                 .authorizeHttpRequests(
                         authorize ->
                                     authorize
-                                            .requestMatchers("/user/auth/**").permitAll()
-                                            .requestMatchers("/user/**").authenticated()
-                                            //Bloquear rutas por rol:
-                                            //.requestMatchers("/user/**").hasRole("USER")
-                                            //.requestMatchers("/user/**").hasAnyRole("ADMIN", "USER")
+                                            // Permitir GET en /category/**
+                                            .requestMatchers(HttpMethod.GET, "/category/**").permitAll()
+
+                                            // Requiere autenticación para otros métodos en /category/**
+                                            .requestMatchers(HttpMethod.POST, "/category/**").hasAuthority("manageProduct")
+                                            .requestMatchers(HttpMethod.PUT, "/category/**").hasAuthority("manageProduct")
+                                            .requestMatchers(HttpMethod.PATCH, "/category/**").hasAuthority("manageProduct")
+                                            .requestMatchers(HttpMethod.DELETE, "/category/**").hasAuthority("manageProduct")
+
                                             .anyRequest().authenticated()
                 )
                 .sessionManagement(

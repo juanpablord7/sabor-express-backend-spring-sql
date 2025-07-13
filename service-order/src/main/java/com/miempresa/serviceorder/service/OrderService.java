@@ -1,36 +1,126 @@
 package com.miempresa.serviceorder.service;
 
-import com.miempresa.serviceorder.client.IndexClient;
-import com.miempresa.serviceorder.dto.OrderRequest;
+import com.miempresa.serviceorder.client.ProductClient;
+import com.miempresa.serviceorder.client.UserClient;
 import com.miempresa.serviceorder.dto.PaginatedResponse;
-import com.miempresa.serviceorder.model.OrderModel;
-import com.miempresa.serviceorder.repository.OrderCrudRepository;
+import com.miempresa.serviceorder.dto.client.Product;
+import com.miempresa.serviceorder.dto.client.User;
+import com.miempresa.serviceorder.dto.request.order.OrderPatchRequest;
+import com.miempresa.serviceorder.dto.request.order.OrderRequest;
+import com.miempresa.serviceorder.dto.response.OrderView;
+import com.miempresa.serviceorder.model.Order;
+import com.miempresa.serviceorder.model.OrderItem;
+import com.miempresa.serviceorder.repository.OrderRepository;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class OrderService {
-    private final OrderCrudRepository orderCrudRepository;
-    private final IndexClient indexClient;
+    private final OrderRepository orderRepository;
+    private final Validator validator;
 
-    public OrderService(OrderCrudRepository orderCrudRepository, IndexClient indexClient) {
-        this.orderCrudRepository = orderCrudRepository;
-        this.indexClient = indexClient;
+    private final UserClient userClient;
+    private final ProductClient productClient;
+
+    public OrderService(OrderRepository orderRepository, Validator validator, UserClient userClient, ProductClient productClient) {
+        this.orderRepository = orderRepository;
+        this.validator = validator;
+        this.userClient = userClient;
+        this.productClient = productClient;
     }
 
-    public PaginatedResponse<OrderModel> findAllOrder(Integer page, Integer limit, Long status){
+    //************************ Utilities ************************
+
+    public Order save(Order order){
+        Set<ConstraintViolation<Order>> violations = validator.validate(order);
+
+        if(!violations.isEmpty()){
+            throw new ConstraintViolationException(violations);
+        }
+
+        return orderRepository.save(order);
+    }
+
+    public Order createOrderItems(Order order,
+                                  List<Long> productsData,
+                                  List<Long> quantities){
+
+        if(productsData.size() != quantities.size()){
+            throw new IllegalArgumentException("The product and quantity list must have same size");
+        }
+
+        //Convert the List into a String delimited by comma
+        String productsQuery = convertListProducts(productsData);
+
+        double totalPrice = 0.0;
+        List<OrderItem> items = new ArrayList<>();
+
+        //Get the products information from microservice product
+        List<Product> products = productClient.findProducts(productsQuery);
+
+        System.out.println("Products: " + products);
+
+        //Create the OrderItems and set the information of each product
+        for (int i = 0; i < products.size() ; i++) {
+            Product product = products.get(i);
+            Long quantity = quantities.get(i);
+            double itemTotal = product.getPrice() * quantity;
+
+            OrderItem orderItem = OrderItem.builder()
+                    .order(order) //Assign the order
+                    .productId(product.getId())
+                    .price(product.getPrice())
+                    .quantity(quantity)
+                    .productName(product.getName())
+                    .build();
+
+            items.add(orderItem);
+            totalPrice += itemTotal;
+        }
+
+        order.setItems(items);
+        order.setTotalPrice(totalPrice);
+
+        return order;
+    }
+
+    public String convertListProducts(List<Long> products){
+        return products.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining(","));
+    }
+
+    public Long getUserId(){
+        User user = userClient.getUser();
+
+        if(user.getId() == null){
+            throw new IllegalArgumentException("The user was not found with your jwt");
+        }
+
+        return user.getId();
+    }
+
+    //************************ Operations ************************
+
+    public PaginatedResponse<OrderView> findMyOrders(Integer page, Integer limit, Long state){
         Pageable pageable = PageRequest.of(page, limit);
 
-        Page<OrderModel> ordersPage;
+        Page<OrderView> ordersPage;
 
-        if (status == null) {
-            ordersPage = orderCrudRepository.findAll(pageable);
-        } else {
-            ordersPage = orderCrudRepository.findByState(status);
+        Long userId = getUserId();
+
+        if(state == null){
+            ordersPage = orderRepository.findByUserId(userId, pageable);
+        }else{
+            ordersPage = orderRepository.findByUserIdAndState(userId, state, pageable);
         }
 
         return new PaginatedResponse<>(
@@ -42,126 +132,105 @@ public class OrderService {
         );
     }
 
-    public PaginatedResponse<OrderModel> findAllByStatus(Integer page, Integer limit, Long status){
-        Pageable pageable = PageRequest.of(page, limit);
+    public Order findMyOrderById(Long id){
+        Long userId = getUserId();
 
-        Page<OrderModel> ordersPage;
-
-        Boolean isChef = true;
-        Boolean isDelivery = true;
-
-        if(isChef == false && isDelivery == false){
-            return new PaginatedResponse<>();
-        }
-
-        // Validaciones de transiciones
-        if (isChef) {
-            if(status == 0L){
-                ordersPage = orderCrudRepository.findByState(0L);
-            }else if(status == 1L){
-                ordersPage = orderCrudRepository.findByState(1L);
-            }
-
-        }
-
-        if (isDelivery) {
-            if(status == 2L){
-                ordersPage = orderCrudRepository.findByState(2L);
-            }else if(status == 3L){
-                ordersPage = orderCrudRepository.findByState(3L);
-            }
-        }
-
-        return new PaginatedResponse<>(
-                ordersPage.getContent(),
-                ordersPage.getNumber(),
-                ordersPage.getTotalPages(),
-                ordersPage.getTotalElements(),
-                ordersPage.getSize()
-        );
+        return orderRepository.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new IllegalArgumentException("This order doesn't exist or don't belong to you"));
     }
 
-    public OrderModel createOrder(OrderRequest request){
-        OrderModel order = OrderModel.builder()
-                                    .order(request.getOrder())
-                                    .userId(request.getUserId())
-                                    .build();
+    public Order createOrder(OrderRequest request){
+        int size = request.getProduct().size();
 
-        order.setState(0L);
+        Long userId = getUserId();
 
-        order.setId(indexClient.getIndex());
+        //Create order to save it in memory and be setted to the orderItems
+        Order order = Order.builder()
+                .userId(userId)
+                .state(1L)
+                .build();
 
-        System.out.println("Order to be created: " + order.toString());
+        order = createOrderItems(order, request.getProduct(), request.getQuantity());
 
-        return orderCrudRepository.save(order);
+        order.setCreatedAt(new Date(System.currentTimeMillis()));
+        order.setUpdatedAt(new Date(System.currentTimeMillis()));
+
+        //System.out.println("Order to be created: " + order.toString());
+
+        return orderRepository.save(order);
     }
 
-    public OrderModel replaceOrder(Long id, OrderRequest request){
-        OrderModel actualOrder;
-
-        System.out.println("Id of the Order to be replaced: " + id);
-
-        actualOrder = orderCrudRepository.findById(id)
+    public Order replaceOrder(Long id, OrderRequest request){
+        Order actualOrder = orderRepository.findById(id)
                             .orElseThrow(() -> new IllegalArgumentException("Order not found"));
 
-        System.out.println("Order to be replaced was found");
+        //The orderItems can't be modified if the state is 1L (Registered, before pass to cook)
+        if(actualOrder.getState() != 1L) {
+            throw new IllegalArgumentException("The order is been attended and can't be modified");
+        }
 
-        OrderModel order = OrderModel.builder()
-                                    .id(actualOrder.getId())
-                                    .order(request.getOrder())
-                                    .userId(request.getUserId())
-                                    .build();
+        Long userId = getUserId();
 
-        System.out.println("Order to replace: " + order.toString());
+        if(!actualOrder.getUserId().equals(userId)){
+            throw new IllegalArgumentException("You aren't the owner of this order");
+        }
 
-        return orderCrudRepository.save(order);
+        //Create order to save it in memory and be setted to the orderItems
+        Order order = Order.builder()
+                .id(actualOrder.getId())
+                .userId(userId)
+                .build();
+
+        order = createOrderItems(order, request.getProduct(), request.getQuantity());
+
+        order.setUpdatedAt(new Date(System.currentTimeMillis()));
+
+        System.out.println("Order to be edited: " + order.toString());
+
+        return orderRepository.save(order);
     }
 
-    public OrderModel updateOrder(Long id, OrderRequest request){
-        OrderModel actualOrder;
-
-        System.out.println("Id of the Order to be updated: " + id);
-
-        actualOrder = orderCrudRepository.findById(id)
+    public Order updateOrder(Long id, OrderPatchRequest request){
+        Order actualOrder = orderRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
 
-        System.out.println("Order to be updated was found");
+        Long userId = getUserId();
 
-        if(request.getOrder() != null){
-            actualOrder.setOrder(request.getOrder());
-        }
-        if(request.getUserId() != null){
-            actualOrder.setUserId(request.getUserId());
+        if(!actualOrder.getUserId().equals(userId)){
+            throw new IllegalArgumentException("You aren't the owner of this order");
         }
 
-        System.out.println("Order to update: " + actualOrder.toString());
+        if(request.getProduct() != null ){
+            //The orderItems can't be modified if the state is 1L (Registered, before pass to cook)
+            if(actualOrder.getState() != 1L) {
+                throw new IllegalArgumentException("The order is been attended and can't be modified");
+            }
 
-        return orderCrudRepository.save(actualOrder);
-    }
-
-    public OrderModel updateOrderState(Long id, Long userId) {
-        OrderModel order = orderCrudRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Order not found"));
-
-        Long currentState = order.getState();
-
-        Boolean isChef = true;
-        Boolean isDelivery = true;
-
-        // Validaciones de transiciones
-        if (isChef && (currentState == 0L || currentState == 1L)) {
-            order.setState((currentState + 1L));
+            actualOrder = createOrderItems(actualOrder, request.getProduct(), request.getQuantity());
         }
 
-        if (isDelivery && currentState == 2L) {
-            order.setState((currentState + 1L));
-        }
+        actualOrder.setUpdatedAt(new Date(System.currentTimeMillis()));
 
-        return orderCrudRepository.save(order);
+        System.out.println("Order edited: " + actualOrder.toString());
+
+        return orderRepository.save(actualOrder);
     }
 
     public void deleteOrder(Long id){
-        orderCrudRepository.deleteById(id);
+        Order actualOrder = orderRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+
+        if(actualOrder.getState() != 1L){
+            throw new IllegalArgumentException("The order can't be deleted because is being attended");
+        }
+
+        Long userId = getUserId();
+
+        if(!actualOrder.getUserId().equals(userId)){
+            throw new IllegalArgumentException("You aren't the owner of this order");
+        }
+
+        orderRepository.deleteById(id);
     }
 
 }

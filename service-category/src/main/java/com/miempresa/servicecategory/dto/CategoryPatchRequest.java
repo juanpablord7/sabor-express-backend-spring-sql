@@ -1,14 +1,11 @@
 package com.miempresa.servicecategory.dto;
 
 import com.miempresa.servicecategory.utils.annotation.customAnnotation.NotXSS;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.bson.types.ObjectId;
 
-import java.util.Map;
 
 @Data
 @NoArgsConstructor

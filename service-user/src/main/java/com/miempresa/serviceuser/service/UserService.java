@@ -1,161 +1,193 @@
 package com.miempresa.serviceuser.service;
 
-import com.miempresa.serviceuser.client.IndexClient;
-import com.miempresa.serviceuser.dto.PaginatedResponse;
+import com.miempresa.serviceuser.client.RoleClient;
 import com.miempresa.serviceuser.dto.UserPatchRequest;
 import com.miempresa.serviceuser.dto.UserRequest;
-import com.miempresa.serviceuser.enums.RoleEnum;
-import com.miempresa.serviceuser.model.UserModel;
-import com.miempresa.serviceuser.repository.UserCrudRepository;
+import com.miempresa.serviceuser.dto.client.RoleResponse;
+import com.miempresa.serviceuser.jwt.JwtService;
+import com.miempresa.serviceuser.model.User;
+import com.miempresa.serviceuser.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 
+import java.util.Date;
 
+@Service
 public class UserService {
+    private final UserRepository userRepository;
 
-    private final IndexClient indexClient;
-    private final UserCrudRepository userCrudRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+
+    private final RoleClient roleClient;
 
     @Autowired
-    public UserService(IndexClient indexClient, UserModel userModel, UserCrudRepository userCrudRepository) {
-        this.indexClient = indexClient;
-        this.userCrudRepository = userCrudRepository;
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService, RoleClient roleClient) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
+        this.roleClient = roleClient;
     }
 
-    public PaginatedResponse<UserModel> findAllUsers(Integer page, Integer limit, RoleEnum role){
-        //Solo para admins
-        Pageable pageable = PageRequest.of(page, limit);
+    public User findMyUser(){
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        Page<UserModel> usersPage;
+        String username = auth.getName();
 
-        if(role == null){
-            usersPage = userCrudRepository.findAll(pageable);
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new AccessDeniedException("Not found any User with username: " + username));
+    }
+
+    public String login(String username, String email, String password){
+        User user;
+
+        //Validate the different way to login (Username or email)
+        if(username != null && !username.isBlank()) {
+            user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new IllegalArgumentException("Not found any User with username: " + username));
+        } else if (email != null && !email.isBlank()) {
+            user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new IllegalArgumentException("Not found any User with email: " + email));
         }else{
-            usersPage = userCrudRepository.findAllByRole(pageable, role);
+            throw new IllegalArgumentException("Don't was provided 'username' or 'email'");
         }
 
-        return new PaginatedResponse<>(
-                usersPage.getContent(),
-                usersPage.getNumber(),
-                usersPage.getTotalPages(),
-                usersPage.getTotalElements(),
-                usersPage.getSize()
-        );
+        System.out.println(username);
+
+        //Check if the password is correct
+        if(passwordEncoder.matches(password, user.getPassword())){
+            //Get the role permissions for the jwt
+            RoleResponse role = roleClient.getRole(user.getRole());
+
+            return jwtService.generateToken(user, role);
+        }else{
+            throw new IllegalArgumentException("The Password is incorrect");
+        }
     }
 
-    public UserModel findUser(Long id){
-        return userCrudRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Not find any user with id: " + id));
+    public User createUser(UserRequest request){
+
+        Long role = roleClient.getDefaultRole();
+        if(role == null){
+            role = 0L;
+        }
+
+        User user = User.builder()
+                .username(request.getUsername())
+                .fullname(request.getFullname())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .createdAt(new Date(System.currentTimeMillis()))
+                .updatedAt(new Date(System.currentTimeMillis()))
+                .role(role)
+                .build();
+
+        return userRepository.save(user);
     }
 
-    public UserModel findUserByUsername(String username){
-        return userCrudRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("Not find any user with username: " + username));
+    public User replaceUser(UserRequest request){
+        User user = findMyUser();
 
-    }
+        System.out.println("Id of the User to be replaced: " + user.getId());
 
-    public UserModel createUser(UserRequest request){
+        //If want to change the username
+        String username = request.getUsername();
 
-        //Buscar si el username ya existe
-        userCrudRepository.findByUsername(request.getUsername())
-                            .ifPresent(user -> {
+        if(!user.getUsername().equals(username)){
+            userRepository.findByUsername(username)
+                            .ifPresent(aux -> {
                                 throw new IllegalArgumentException("Username already exists");
                             });
 
-        //Validar si la solicitud la hace un admin, o usuario privilegiado
-        //para cambiar el rol de otro usuario:
-        RoleEnum role = RoleEnum.USER;
+            user.setUsername(username);
+        }
 
-        UserModel user = UserModel.builder()
-                .username(request.getUsername())
-                .name(request.getName())
-                .password(request.getPassword())
-                .role(role)
-                .build();
+        //If want to change the email
+        String email = request.getEmail();
+        if(!user.getEmail().equals(email)){
+            userRepository.findByUsername(email)
+                    .ifPresent(aux -> {
+                        throw new IllegalArgumentException("Username already exists");
+                    });
 
-        user.setId(indexClient.getIndex());
+            user.setEmail(email);
+        }
 
-        return userCrudRepository.save(user);
+        //Change the attributes
+        user.setFullname(request.getFullname());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setUpdatedAt(new Date(System.currentTimeMillis()));
+
+        return userRepository.save(user);
     }
 
-    public UserModel replaceUser(Long id, UserRequest request){
-        UserModel actualUser;
+    public User updateUser(UserPatchRequest request){
+        User user = findMyUser();
 
-        if(id == null){
-            throw new IllegalArgumentException("No id was provided");
+        System.out.println("Id of the User to be updated: " + user.getId());
+
+        //If want to change the username
+        String username = request.getUsername();
+        if(username != null && !username.isBlank()){
+            if(!user.getUsername().equals(username)){
+                userRepository.findByUsername(username)
+                        .ifPresent(aux -> {
+                            throw new IllegalArgumentException("Username already exists");
+                        });
+
+                user.setUsername(username);
+            }
         }
 
-        //Buscar si el username ya existe
-        userCrudRepository.findByUsername(request.getUsername())
-                .ifPresent(user -> {
-                    throw new IllegalArgumentException("Username already exists");
-                });
 
-        System.out.println("Id of the User to be replaced: " + id);
+        //If want to change the email
+        String email = request.getEmail();
+        if(email != null && !email.isBlank()) {
+            userRepository.findByEmail(email)
+                    .ifPresent(aux -> {
+                        throw new IllegalArgumentException("Username already exists");
+                    });
+            user.setEmail(email);
+        }
 
-        actualUser = userCrudRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Not find any user with id: " + id));
+        //Change the attributes
+        String fullname = request.getFullname();
+        if(fullname != null && !fullname.isBlank()){
+            user.setFullname(request.getFullname());
+        }
 
-        System.out.println("User to be replace was Found");
+        String password = request.getPassword();
+        if(password != null && !password.isBlank()) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
 
-        //Validar si la solicitud la hace un admin, o usuario privilegiado
-        //para cambiar el rol de otro usuario:
-        RoleEnum role = RoleEnum.USER;
+        System.out.println("username");
+        System.out.println(username != null);
+        System.out.println(username != null && !username.isBlank());
+        System.out.println("fullname");
+        System.out.println(fullname);
+        System.out.println(fullname != null);
+        System.out.println(fullname != null && !fullname.isBlank());
+        System.out.println("email");
+        System.out.println(email != null);
+        System.out.println(email != null && !email.isBlank());
+        System.out.println("password");
+        System.out.println(password != null);
+        System.out.println(password != null && !password.isBlank());
 
-        UserModel user = UserModel.builder()
-                .id(actualUser.getId())
-                .username(request.getUsername())
-                .name(request.getName())
-                .password(request.getPassword())
-                .role(role)
-                .build();
+        user.setUpdatedAt(new Date(System.currentTimeMillis()));
 
-        return userCrudRepository.save(user);
+        return userRepository.save(user);
     }
 
-    public UserModel updateUser(Long id, UserPatchRequest request){
-        UserModel actualUser;
+    public void deleteUser(){
+        User user = findMyUser();
 
-        if(id == null){
-            throw new IllegalArgumentException("No id was provided");
-        }
-
-        //Buscar si el username ya existe
-        userCrudRepository.findByUsername(request.getUsername())
-                .ifPresent(user -> {
-                    throw new IllegalArgumentException("Username already exists");
-                });
-
-        System.out.println("Id of the User to be updated: " + id);
-
-        actualUser = userCrudRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Not find any user with id: " + id));
-
-        System.out.println("User to be update was Found");
-
-        if(request.getName() != null){
-            actualUser.setName(request.getName());
-        }
-
-        if(request.getUsername() != null){
-            actualUser.setUsername(request.getUsername());
-        }
-
-        if(request.getPassword() != null){
-            actualUser.setPassword(request.getPassword() );
-        }
-
-        //Validar si la solicitud la hace un admin, o usuario privilegiado
-        //para cambiar el rol de otro usuario:
-        RoleEnum role = RoleEnum.USER;
-
-        return userCrudRepository.save(actualUser);
-    }
-
-    public void deleteUser(Long id){
-        userCrudRepository.deleteById(id);
+        userRepository.deleteById(user.getId());
     }
 
 }

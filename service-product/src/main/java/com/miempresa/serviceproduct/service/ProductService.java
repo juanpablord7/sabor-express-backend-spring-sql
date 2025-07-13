@@ -1,13 +1,14 @@
 package com.miempresa.serviceproduct.service;
 
-import com.miempresa.serviceproduct.client.CategoryClient;
-import com.miempresa.serviceproduct.client.IndexClient;
 import com.miempresa.serviceproduct.dto.PaginatedResponse;
 import com.miempresa.serviceproduct.dto.ProductPatchRequest;
 import com.miempresa.serviceproduct.dto.ProductRequest;
-import com.miempresa.serviceproduct.model.ProductModel;
-import com.miempresa.serviceproduct.repository.ProductCrudRepository;
+import com.miempresa.serviceproduct.model.Product;
+import com.miempresa.serviceproduct.repository.ProductRepository;
 import com.miempresa.serviceproduct.utils.sanitizer.StringSanitizer;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -15,38 +16,43 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class ProductService {
-    private final ProductCrudRepository productCrudRepository;
+    private final ProductRepository productRepository;
     private final StringSanitizer stringSanitizer;
-
-    //Microservicios
-    private final IndexClient indexClient;
-    private final CategoryClient categoryClient;
+    private final Validator validator;
 
     @Autowired
-    public ProductService(ProductCrudRepository productCrudRepository,
-                          StringSanitizer stringSanitizer,
-                          IndexClient indexClient,
-                          CategoryClient categoryClient) {
-        this.productCrudRepository = productCrudRepository;
+    public ProductService(ProductRepository productRepository,
+                          StringSanitizer stringSanitizer, Validator validator) {
+        this.productRepository = productRepository;
         this.stringSanitizer = stringSanitizer;
-        this.indexClient = indexClient;
-        this.categoryClient = categoryClient;
+        this.validator = validator;
     }
 
+    //Validate and save the product
+    public Product save(Product product){
+        Set<ConstraintViolation<Product>> violations = validator.validate(product);
+
+        if(!violations.isEmpty()){
+            throw new ConstraintViolationException(violations);
+        }
+
+        return productRepository.save(product);
+    }
 
     // Get All
-    public PaginatedResponse<ProductModel> findProductsByCategory(Integer page, Integer limit, Long categoryId) {
+    public PaginatedResponse<Product> findProductsByCategory(Integer page, Integer limit, Long categoryId) {
         Pageable pageable = PageRequest.of(page, limit);
 
-        Page<ProductModel> productsPage;
+        Page<Product> productsPage;
 
         if (categoryId == null) {
-            productsPage = productCrudRepository.findAll(pageable);
+            productsPage = productRepository.findAll(pageable);
         } else {
-            productsPage = productCrudRepository.findAllByCategoryId(categoryId, pageable);
+            productsPage = productRepository.findAllByCategory(categoryId, pageable);
         }
 
         return new PaginatedResponse<>(
@@ -58,52 +64,40 @@ public class ProductService {
         );
     }
 
-    public ProductModel findProduct(Long id){
-        return productCrudRepository.findById(id)
+    public Product findProduct(Long id){
+        return productRepository.findById(id)
                 .orElseThrow(() ->
                         new IllegalArgumentException("Don't Found any Product whit that Id: " + id));
 
     }
 
-    public List<ProductModel> findProductsByProductId(List<Long> ids) {
-        return productCrudRepository.findAllByIdIn(ids);
+    public List<Product> findListProductById(List<Long> ids) {
+        return productRepository.findAllByIdIn(ids);
     }
 
-    public ProductModel createProduct(ProductRequest request){
+    public Product createProduct(ProductRequest request){
         System.out.println("Request product to be saved: " + request.toString());
 
-        //Category information
-        Long categoryId = 0L;
-        String category = "";
-
-        //Obtener el nombre y id de la categoría
-        if(request.getCategoryId() != null){
-            String categoryResponse = categoryClient.getCategory(request.getCategoryId());
-            //Si se obtuvo la categoria asignarla
-            if(categoryResponse != null){
-                categoryId = request.getCategoryId();
-                category= categoryResponse;
-            }
+        Long category = 0L;
+        if(request.getCategory() != null){
+            category = request.getCategory();
         }
 
-        ProductModel product = ProductModel.builder()
+        Product product = Product.builder()
                 .name(request.getName())
                 .price(request.getPrice())
-                .categoryId(categoryId)
                 .category(category)
-                .image("products/" + stringSanitizer.sanitizeXSS(request.getImage()))
+                .image(stringSanitizer.sanitizeXSS(request.getImage()))
                 .build();
-
-        product.setId(indexClient.getIndex());
 
         System.out.println("Product to save: " + product.toString());
 
-        return productCrudRepository.save(product);
+        return save(product);
     }
 
     //Replace
-    public ProductModel replaceProduct(Long id, ProductRequest request){
-        ProductModel actualProduct;
+    public Product replaceProduct(Long id, ProductRequest request){
+        Product actualProduct;
 
         if(id == null){
             throw new IllegalArgumentException("Id was not provided");
@@ -111,50 +105,41 @@ public class ProductService {
 
         System.out.println("Id of the Product to be updated: " + id);
 
-        actualProduct= productCrudRepository.findById(id)
+        actualProduct= productRepository.findById(id)
                 .orElseThrow(() ->
                         new IllegalArgumentException("Don't Found any Product whit the Id: " + id));
 
 
         System.out.println("Product to be replace was Found");
 
-        //Category information
-        Long categoryId = 0L;
-        String category = "";
 
-        //Obtener el nombre y id de la categoría
-        if(request.getCategoryId() != null){
-            String categoryResponse = categoryClient.getCategory(request.getCategoryId());
-            //Si se obtuvo la categoria asignarla
-            if(categoryResponse != null){
-                categoryId = request.getCategoryId();
-                category= categoryResponse;
-            }
+        Long category = 0L;
+        if(request.getCategory() != null){
+            category = request.getCategory();
         }
 
-        ProductModel product = ProductModel.builder()
+        Product product = Product.builder()
                 .id(actualProduct.getId())  //Mantener el id
                 .name(request.getName())
                 .price(request.getPrice())
-                .categoryId(categoryId)
                 .category(category)
-                .image("products/" + stringSanitizer.sanitizeXSS(request.getImage()))
+                .image(stringSanitizer.sanitizeXSS(request.getImage()))
                 .build();
 
         System.out.println("Product to replace: " + product.toString());
 
-        return productCrudRepository.save(product);
+        return save(product);
     }
 
     //Update
-    public ProductModel updateProduct(Long id, ProductPatchRequest request){
+    public Product updateProduct(Long id, ProductPatchRequest request){
 
-        ProductModel actualProduct;
+        Product actualProduct;
 
         if(id  != null){
             System.out.println("Id of the Product to be updated: " + id);
 
-            actualProduct= productCrudRepository.findById(id)
+            actualProduct= productRepository.findById(id)
                     .orElseThrow(() ->
                             new IllegalArgumentException("Don't Found any Product whit the Id: " + id));
         } else {
@@ -171,32 +156,22 @@ public class ProductService {
             actualProduct.setPrice(request.getPrice());
         }
         if(request.getImage() != null){
-            actualProduct.setImage("products/" + stringSanitizer.sanitizeXSS(request.getImage()));
+            actualProduct.setImage(stringSanitizer.sanitizeXSS(request.getImage()));
         }
 
-        //Category information
-        if(request.getCategoryId() != null){
-            Long categoryId = 0L;
-            String category = "";
-            //Obtener el nombre y id de la categoría
-            String categoryResponse = categoryClient.getCategory(request.getCategoryId());
-            //Si se obtuvo la categoria asignarla
-            if(categoryResponse != null){
-                categoryId = request.getCategoryId();
-                category= categoryResponse;
-            }
-
-            actualProduct.setCategoryId(categoryId);
-            actualProduct.setCategory(category);
+        if(request.getCategory() != null){
+            actualProduct.setCategory(request.getCategory());
+        }else{
+            actualProduct.setCategory(0L);
         }
 
         System.out.println("Product to update: " + actualProduct.toString());
 
-        return productCrudRepository.save(actualProduct);
+        return save(actualProduct);
     }
 
     public void deleteProduct(Long id){
-        productCrudRepository.deleteById(id);
+        productRepository.deleteById(id);
     }
 
 

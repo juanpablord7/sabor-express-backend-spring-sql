@@ -1,9 +1,9 @@
 package com.miempresa.servicecategory.repository;
 
-import com.miempresa.servicecategory.model.CategoryModel;
+import com.miempresa.servicecategory.model.Category;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface CategoryRepository extends JpaRepository<CategoryModel, Long> {
+public interface CategoryRepository extends JpaRepository<Category, Long> {
 
 }
 

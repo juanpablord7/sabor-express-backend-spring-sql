@@ -3,64 +3,65 @@ package com.miempresa.servicecategory.service;
 import com.miempresa.servicecategory.client.IndexClient;
 import com.miempresa.servicecategory.dto.CategoryPatchRequest;
 import com.miempresa.servicecategory.dto.CategoryRequest;
-import com.miempresa.servicecategory.model.CategoryModel;
+import com.miempresa.servicecategory.model.Category;
 import com.miempresa.servicecategory.repository.CategoryRepository;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class CategoryService {
     
     private final CategoryRepository categoryRepository;
+    private final Validator validator;
 
     @Autowired
-    public CategoryService(IndexClient indexClient, CategoryRepository categoryRepository) {
+    public CategoryService(IndexClient indexClient, CategoryRepository categoryRepository, Validator validator) {
         this.categoryRepository = categoryRepository;
+        this.validator = validator;
     }
 
-    public List<CategoryModel> findAllCategory(CategoryRequest filter){
+    public Category save(Category category){
+        Set<ConstraintViolation<Category>> violations = validator.validate(category);
 
-        /*
-        //Filtrar por categoria
-        if (filter.getName() != null && !filter.getName().isBlank()) {
-            query.addCriteria(Criteria.where("name").is(filter.getName()));
+        if(!violations.isEmpty()){
+            throw new ConstraintViolationException(violations);
         }
 
-        //Filtrar por imagen
-        if (filter.getImage() != null && !filter.getImage().isBlank()) {
-            query.addCriteria(Criteria.where("image").is(filter.getImage()));
-        }
-         */
-
-        return categoryRepository.findAll();
+        return categoryRepository.save(category);
     }
 
-    public CategoryModel findCategory(Long id){
+    public List<Category> findAllCategory(){
+        return categoryRepository.findAll(Sort.by("id"));
+    }
+
+    public Category findCategory(Long id){
         return categoryRepository.findById(id)
                         .orElseThrow(() -> new IllegalArgumentException("Don't found any Category whit Id: " + id));
     }
 
     //Create
-    public CategoryModel createCategory(CategoryRequest categoryRequest){
+    public Category createCategory(CategoryRequest categoryRequest){
 
-        CategoryModel category = CategoryModel.builder()
+        Category category = Category.builder()
                 .name(categoryRequest.getName())
-                .image("category/" + categoryRequest.getImage())
+                .image(categoryRequest.getImage())
                 .build();
 
         System.out.println("Category to be saved: " + category.toString());
 
-        return categoryRepository.save(category);
+        return save(category);
     }
 
     //Replace
-    public CategoryModel replaceCategory(Long id, CategoryRequest categoryRequest){
-        CategoryModel actualCategory;
+    public Category replaceCategory(Long id, CategoryRequest categoryRequest){
+        Category actualCategory;
 
         System.out.println("Id of the Product to be replaced: " + id);
 
@@ -72,20 +73,20 @@ public class CategoryService {
 
         System.out.println("Category to be replaced was found");
 
-        CategoryModel category = CategoryModel.builder()
-                .categoryId(actualCategory.getCategoryId())    //Mantener el product_id
+        Category category = Category.builder()
+                .id(actualCategory.getId())    //Mantener el product_id
                 .name(categoryRequest.getName())
-                .image("category/"  + categoryRequest.getImage())
+                .image(categoryRequest.getImage())
                 .build();
 
         System.out.println("Category to replace: " + category.toString());
 
-        return categoryRepository.save(category);
+        return save(category);
     }
 
     //Update
-    public CategoryModel updateCategory(Long id, CategoryPatchRequest categoryRequest){
-        CategoryModel actualCategory;
+    public Category updateCategory(Long id, CategoryPatchRequest categoryRequest){
+        Category actualCategory;
 
         System.out.println("ProductId of the Product to be updated: " + id);
 
@@ -101,12 +102,12 @@ public class CategoryService {
 
         //Actualizar el campo image
         if (categoryRequest.getImage() != null){
-            actualCategory.setImage("category/" + categoryRequest.getImage());
+            actualCategory.setImage(categoryRequest.getImage());
         }
 
         System.out.println("Category to update: " + actualCategory.toString());
 
-        return categoryRepository.save(actualCategory);
+        return save(actualCategory);
     }
 
     public void deleteCategory(Long id){

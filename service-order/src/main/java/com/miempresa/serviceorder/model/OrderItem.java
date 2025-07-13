@@ -1,17 +1,12 @@
 package com.miempresa.serviceorder.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
-import java.util.Date;
+import lombok.*;
 
 @Data
 @Builder
@@ -19,29 +14,34 @@ import java.util.Date;
 @AllArgsConstructor
 @Table(name = "order_item")
 @Entity
-public class Order_item {
+public class OrderItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull(message = "The User id can't be null")
-    @PositiveOrZero(message = "The User id must be positive")
-    @Column(name = "order_id",nullable = false)
-    private Long orderId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id")
+    @ToString.Exclude //Avoid infinite recursion
+    @JsonIgnore
+    private Order order;
 
-    @NotNull(message = "The User id can't be null")
-    @PositiveOrZero(message = "The User id must be positive")
+    @NotNull(message = "The Product id can't be null")
+    @PositiveOrZero(message = "The Product id must be positive")
     @Column(name = "product_id",nullable = false)
     private Long productId;
 
-    @NotNull(message = "The User id can't be null")
-    @Positive(message = "The User id must be positive")
+    @NotBlank(message = "The Product name can't be null")
+    @Column(name = "product_name",nullable = false)
+    private String productName;
+
+    @NotNull(message = "The Quantity can't be null")
+    @Positive(message = "The Quantity must be positive")
     @Column(nullable = false)
     private Long quantity;
 
-    @NotNull(message = "The User id can't be null")
-    @Positive(message = "The User id must be positive")
+    @NotNull(message = "The Price can't be null")
+    @Positive(message = "ThePrice must be positive")
     @Column(nullable = false)
     private Double price;
 

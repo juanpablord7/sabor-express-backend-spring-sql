@@ -1,6 +1,6 @@
-package com.miempresa.apigateway.service;
+package com.miempresa.serviceimage.service;
 
-import com.miempresa.apigateway.dto.Image;
+import com.miempresa.serviceimage.dto.Image;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,7 +14,7 @@ import java.util.List;
 public class ImageService {
 
     private static final List<String> ALLOWED_EXTENSIONS = List.of("jpg", "jpeg", "png", "webp");
-    private static final String IMAGE_BASE_PATH = "images";
+    private static final String IMAGE_BASE_PATH = System.getProperty("user.dir") + "/images";
 
     private void validatePath(String path) {
         if (path.contains("..")) {
@@ -35,6 +35,8 @@ public class ImageService {
         validatePath(path);
 
         Path imagePath = Paths.get(IMAGE_BASE_PATH, path).normalize();
+
+        System.out.println(imagePath);
 
         if (!Files.exists(imagePath)) {
             throw new IllegalArgumentException("The file doesn't exist");
@@ -57,6 +59,8 @@ public class ImageService {
     public void saveImage(String path, MultipartFile file) {
         validatePath(path);
 
+        System.out.println(path);
+
         if (file.isEmpty()) {
             throw new IllegalArgumentException("Uploaded file is empty");
         }
@@ -69,23 +73,14 @@ public class ImageService {
         Path destination = Paths.get(IMAGE_BASE_PATH, path).normalize();
 
         try {
+            System.out.println("Destino absoluto: " + destination.toAbsolutePath());
+            System.out.println("Directorio padre: " + destination.getParent());
+
             Files.createDirectories(destination.getParent());
             file.transferTo(destination.toFile());
         } catch (IOException e) {
             throw new RuntimeException("Error saving image file", e);
         }
-    }
-
-    public void replaceImage(String path, MultipartFile file) {
-        validatePath(path);
-
-        Path destination = Paths.get(IMAGE_BASE_PATH, path).normalize();
-
-        if (!Files.exists(destination)) {
-            throw new IllegalArgumentException("The file to replace does not exist");
-        }
-
-        saveImage(path, file);
     }
 
     public void deleteImage(String path) {

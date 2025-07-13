@@ -1,13 +1,10 @@
 package com.miempresa.serviceproduct.dto;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.bson.types.ObjectId;
 
-import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -20,7 +17,7 @@ public class ProductPatchRequest {
     private Double price;
 
     @PositiveOrZero(message = "Category_id must be a positive number")
-    private Long categoryId;
+    private Long category;
 
     @Size(min = 4, message = "The image must contain at least 4 letters")
     private String image;
