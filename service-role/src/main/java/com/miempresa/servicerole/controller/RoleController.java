@@ -33,7 +33,7 @@ public class RoleController {
     }
 
     @GetMapping("/getDefault")
-    public ResponseEntity<Long> getDefaultRole(){
+    public ResponseEntity<?> getDefaultRole(){
         Role role = roleService.findDefaultRole();
         return ResponseEntity.ok(role.getId());
     }
@@ -43,6 +43,7 @@ public class RoleController {
                                         @RequestParam(required = false) String fields) {
 
         Role role = roleService.findById(id);
+
 
         if(fields == null || fields.isBlank()){
             return ResponseEntity.ok(role);

@@ -1,6 +1,5 @@
 package com.miempresa.servicecategory.service;
 
-import com.miempresa.servicecategory.client.IndexClient;
 import com.miempresa.servicecategory.dto.CategoryPatchRequest;
 import com.miempresa.servicecategory.dto.CategoryRequest;
 import com.miempresa.servicecategory.model.Category;
@@ -22,7 +21,7 @@ public class CategoryService {
     private final Validator validator;
 
     @Autowired
-    public CategoryService(IndexClient indexClient, CategoryRepository categoryRepository, Validator validator) {
+    public CategoryService(CategoryRepository categoryRepository, Validator validator) {
         this.categoryRepository = categoryRepository;
         this.validator = validator;
     }

@@ -3,6 +3,7 @@ package com.miempresa.serviceuser.service;
 import com.miempresa.serviceuser.client.RoleClient;
 import com.miempresa.serviceuser.dto.PaginatedResponse;
 import com.miempresa.serviceuser.dto.management.UserManagementRequest;
+import com.miempresa.serviceuser.dto.user.UserView;
 import com.miempresa.serviceuser.model.User;
 import com.miempresa.serviceuser.repository.UserRepository;
 import org.springframework.data.domain.Page;
@@ -92,13 +93,13 @@ public class UserManagementService {
     }
 
 
-    public PaginatedResponse<User> findAllUsers(Integer page, Integer limit, Long role){
+    public PaginatedResponse<UserView> findAllUsers(Integer page, Integer limit, Long role){
         Pageable pageable = PageRequest.of(page, limit);
 
-        Page<User> usersPage;
+        Page<UserView> usersPage;
 
         if(role == null){
-            usersPage = userRepository.findAll(pageable);
+            usersPage = userRepository.findAllProjectedBy(pageable);
         }else{
             usersPage = userRepository.findAllByRole(pageable, role);
         }
@@ -112,18 +113,20 @@ public class UserManagementService {
         );
     }
 
-    public User findById(Long id){
-        return userRepository.findById(id)
+    public UserView findById(Long id){
+        return userRepository.findProjectedById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Not find any user with id: " + id));
     }
 
-    public User findByUsername(String username){
-        return userRepository.findByUsername(username)
+    public UserView findByUsername(String username){
+        return userRepository.findProjectedByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("Not find any user with username: " + username));
     }
 
-    public User updateUser(Long id, UserManagementRequest input){
-        User actualUser = findById(id);
+    public UserView updateUser(Long id, UserManagementRequest input){
+        User actualUser = userRepository
+                .findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Not find any user with id: " + id));
 
         if(input.getPassword() != null && !input.getPassword().isBlank()){
             //Validate the credentials to change passwrod
@@ -148,6 +151,10 @@ public class UserManagementService {
 
         actualUser.setUpdatedAt(new Date(System.currentTimeMillis()));
 
-        return userRepository.save(actualUser);
+        userRepository.save(actualUser);
+
+        // Devolver proyección sin la contraseña
+        return userRepository.findProjectedById(id)
+                .orElseThrow(() -> new IllegalStateException("Error retrieving updated user view"));
     }
 }

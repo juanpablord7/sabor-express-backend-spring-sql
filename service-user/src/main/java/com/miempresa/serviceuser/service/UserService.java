@@ -1,9 +1,10 @@
 package com.miempresa.serviceuser.service;
 
 import com.miempresa.serviceuser.client.RoleClient;
-import com.miempresa.serviceuser.dto.UserPatchRequest;
-import com.miempresa.serviceuser.dto.UserRequest;
+import com.miempresa.serviceuser.dto.user.UserPatchRequest;
+import com.miempresa.serviceuser.dto.user.UserRequest;
 import com.miempresa.serviceuser.dto.client.RoleResponse;
+import com.miempresa.serviceuser.dto.user.UserView;
 import com.miempresa.serviceuser.jwt.JwtService;
 import com.miempresa.serviceuser.model.User;
 import com.miempresa.serviceuser.repository.UserRepository;
@@ -33,7 +34,7 @@ public class UserService {
         this.roleClient = roleClient;
     }
 
-    public User findMyUser(){
+    public User findAuthenticatedUser(){
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
         String username = auth.getName();
@@ -69,12 +70,16 @@ public class UserService {
         }
     }
 
-    public User createUser(UserRequest request){
+    public UserView findMyUser(){
+        User user = findAuthenticatedUser();
+
+        return userRepository.findProjectedById(user.getId())
+                .orElseThrow(() -> new AccessDeniedException("Not found any User with id: " + user.getId()));
+    }
+
+    public UserView createUser(UserRequest request){
 
         Long role = roleClient.getDefaultRole();
-        if(role == null){
-            role = 0L;
-        }
 
         User user = User.builder()
                 .username(request.getUsername())
@@ -86,11 +91,14 @@ public class UserService {
                 .role(role)
                 .build();
 
-        return userRepository.save(user);
+        user = userRepository.save(user);
+
+        return userRepository.findProjectedById(user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("The user was not created successfully") );
     }
 
-    public User replaceUser(UserRequest request){
-        User user = findMyUser();
+    public UserView replaceUser(UserRequest request){
+        User user = findAuthenticatedUser();
 
         System.out.println("Id of the User to be replaced: " + user.getId());
 
@@ -122,70 +130,68 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setUpdatedAt(new Date(System.currentTimeMillis()));
 
-        return userRepository.save(user);
+        user = userRepository.save(user);
+
+        return userRepository.findProjectedById(user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("The user was not created successfully") );
     }
 
-    public User updateUser(UserPatchRequest request){
-        User user = findMyUser();
+    public UserView updateUser(UserPatchRequest request){
+        User user = findAuthenticatedUser();
 
         System.out.println("Id of the User to be updated: " + user.getId());
 
-        //If want to change the username
+        //Validate if the username is included
         String username = request.getUsername();
         if(username != null && !username.isBlank()){
-            if(!user.getUsername().equals(username)){
-                userRepository.findByUsername(username)
-                        .ifPresent(aux -> {
-                            throw new IllegalArgumentException("Username already exists");
-                        });
-
-                user.setUsername(username);
-            }
-        }
-
-
-        //If want to change the email
-        String email = request.getEmail();
-        if(email != null && !email.isBlank()) {
-            userRepository.findByEmail(email)
+            //Search if the username is not assigned to another user
+            userRepository.findByUsername(username)
+                    //If is present throw error:
                     .ifPresent(aux -> {
                         throw new IllegalArgumentException("Username already exists");
                     });
+
+            //The username is not assigned to any other user, so is set to this user
+            user.setUsername(username);
+        }
+
+        //Validate if the email is included
+        String email = request.getEmail();
+        if(email != null && !email.isBlank()) {
+            //Search if the email is not assigned to another user
+            userRepository.findByEmail(email)
+                    //If is present throw error:
+                    .ifPresent(aux -> {
+                        throw new IllegalArgumentException("Username already exists");
+                    });
+
+            //The email is not assigned to any other user, so is set to this user
             user.setEmail(email);
         }
 
-        //Change the attributes
+        //Validate if the fullname is included
         String fullname = request.getFullname();
         if(fullname != null && !fullname.isBlank()){
             user.setFullname(request.getFullname());
         }
 
+        //Validate if the password is included
         String password = request.getPassword();
         if(password != null && !password.isBlank()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
 
-        System.out.println("username");
-        System.out.println(username != null);
-        System.out.println(username != null && !username.isBlank());
-        System.out.println("fullname");
-        System.out.println(fullname);
-        System.out.println(fullname != null);
-        System.out.println(fullname != null && !fullname.isBlank());
-        System.out.println("email");
-        System.out.println(email != null);
-        System.out.println(email != null && !email.isBlank());
-        System.out.println("password");
-        System.out.println(password != null);
-        System.out.println(password != null && !password.isBlank());
-
         user.setUpdatedAt(new Date(System.currentTimeMillis()));
 
-        return userRepository.save(user);
+        //Save the User
+        user = userRepository.save(user);
+
+        return userRepository.findProjectedById(user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("The user was not created successfully") );
     }
 
     public void deleteUser(){
-        User user = findMyUser();
+        User user = findAuthenticatedUser();
 
         userRepository.deleteById(user.getId());
     }

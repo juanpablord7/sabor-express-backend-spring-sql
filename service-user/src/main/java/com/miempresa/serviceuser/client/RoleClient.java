@@ -15,3 +15,4 @@ public interface RoleClient {
     @GetMapping("/{id}")
     RoleResponse getRole(@PathVariable("id") Long id);;
 }
+

@@ -157,6 +157,12 @@
         <version>6.1.0</version>
         <scope>provided</scope>
       </dependency>
+
+      <dependency>
+          <groupId>org.springframework.cloud</groupId>
+          <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
+          <version>3.2.1</version>
+      </dependency>
   </dependencies>
 
 </project>

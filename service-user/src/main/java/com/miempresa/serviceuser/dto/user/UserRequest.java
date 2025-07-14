@@ -1,4 +1,4 @@
-package com.miempresa.serviceuser.dto;
+package com.miempresa.serviceuser.dto.user;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;

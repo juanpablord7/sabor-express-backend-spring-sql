@@ -2,12 +2,19 @@ package com.miempresa.serviceorder.client.fallback;
 
 import com.miempresa.serviceorder.client.UserClient;
 import com.miempresa.serviceorder.dto.client.User;
-import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.cloud.openfeign.FallbackFactory;
 
-public class UserClientFallback implements UserClient {
+public class UserClientFallback implements FallbackFactory<UserClient> {
     @Override
-    public User getUser(){
-        return User.builder().build();
+    public UserClient create(Throwable cause){
+        return new UserClient() {
+            @Override
+            public User getUser(){
+                return User
+                        .builder()
+                        .id(null)
+                        .build();
+            }
+        };
     }
 }

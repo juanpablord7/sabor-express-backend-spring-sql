@@ -1,9 +1,9 @@
 package com.miempresa.serviceuser.controller;
 
 import com.miempresa.serviceuser.client.RoleClient;
-import com.miempresa.serviceuser.dto.UserRequest;
-import com.miempresa.serviceuser.dto.client.RoleResponse;
+import com.miempresa.serviceuser.dto.user.UserRequest;
 import com.miempresa.serviceuser.dto.login.LoginRequest;
+import com.miempresa.serviceuser.dto.user.UserView;
 import com.miempresa.serviceuser.jwt.JwtService;
 import com.miempresa.serviceuser.model.User;
 import com.miempresa.serviceuser.service.UserService;
@@ -37,9 +37,9 @@ public class AuthenticationController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<User> postMyUser(@Valid @RequestBody UserRequest request){
+    public ResponseEntity<UserView> postMyUser(@Valid @RequestBody UserRequest request){
 
-        User user = userService.createUser(request);
+        UserView user = userService.createUser(request);
 
         //return ResponseEntity.ok("The User was created successfully");
 

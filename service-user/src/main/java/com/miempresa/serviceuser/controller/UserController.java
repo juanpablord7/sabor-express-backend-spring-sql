@@ -1,11 +1,10 @@
 package com.miempresa.serviceuser.controller;
 
 
-import com.miempresa.serviceuser.dto.UserPatchRequest;
-import com.miempresa.serviceuser.dto.UserRequest;
+import com.miempresa.serviceuser.dto.user.UserPatchRequest;
+import com.miempresa.serviceuser.dto.user.UserView;
 import com.miempresa.serviceuser.model.User;
 import com.miempresa.serviceuser.service.UserService;
-import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,13 +20,12 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<User> getMyUser(){
+    public ResponseEntity<UserView> getMyUser(){
         return ResponseEntity.ok(userService.findMyUser());
     }
 
     @PatchMapping
-    public ResponseEntity<User> patchMyUser(@RequestBody UserPatchRequest request){
-        System.out.println(request);
+    public ResponseEntity<UserView> patchMyUser(@RequestBody UserPatchRequest request){
         return ResponseEntity.ok(userService.updateUser(request));
     }
 

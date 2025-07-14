@@ -1,5 +1,6 @@
 package com.miempresa.serviceuser.utils.converter;
 
+import com.miempresa.serviceuser.dto.user.UserView;
 import com.miempresa.serviceuser.model.User;
 
 import java.util.HashMap;
@@ -7,7 +8,7 @@ import java.util.Map;
 
 public class ObjectConverter {
 
-    public static Map<String, Object> UserToJson(User user, String fields) {
+    public static Map<String, Object> UserToJson(UserView user, String fields) {
         String[] fieldList = fields.split(",");
 
         Map<String, Object> json = new HashMap<>();

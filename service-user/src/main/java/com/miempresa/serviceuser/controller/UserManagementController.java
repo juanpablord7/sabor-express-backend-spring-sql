@@ -2,6 +2,7 @@ package com.miempresa.serviceuser.controller;
 
 import com.miempresa.serviceuser.dto.PaginatedResponse;
 import com.miempresa.serviceuser.dto.management.UserManagementRequest;
+import com.miempresa.serviceuser.dto.user.UserView;
 import com.miempresa.serviceuser.model.User;
 import com.miempresa.serviceuser.service.UserManagementService;
 import com.miempresa.serviceuser.utils.converter.ObjectConverter;
@@ -21,12 +22,12 @@ public class UserManagementController {
     }
 
     @GetMapping
-    public ResponseEntity<PaginatedResponse<User>> getAllUsers(
+    public ResponseEntity<PaginatedResponse<UserView>> getAllUsers(
             @RequestParam(required = false) Long role,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int limit){
 
-        PaginatedResponse<User> users = userManagService.findAllUsers(page, limit, role);
+        PaginatedResponse<UserView> users = userManagService.findAllUsers(page, limit, role);
         return ResponseEntity.ok(users);
     }
 
@@ -34,7 +35,7 @@ public class UserManagementController {
     public ResponseEntity<?> getUserById (@PathVariable Long id,
                                           @RequestParam(required = false) String fields){
 
-        User user = userManagService.findById(id);
+        UserView user = userManagService.findById(id);
 
         //Don't find any product
         if(user.getId() == null){
@@ -51,9 +52,10 @@ public class UserManagementController {
     }
 
     @PatchMapping(path = "/{id}")
-    public ResponseEntity<User> patchUser(@PathVariable Long id,
+    public ResponseEntity<UserView> patchUser(@PathVariable Long id,
                                           @RequestBody UserManagementRequest userManagRequest){
-        User user = userManagService.updateUser(id, userManagRequest);
+
+        UserView user = userManagService.updateUser(id, userManagRequest);
 
         return ResponseEntity.ok(user);
     }
