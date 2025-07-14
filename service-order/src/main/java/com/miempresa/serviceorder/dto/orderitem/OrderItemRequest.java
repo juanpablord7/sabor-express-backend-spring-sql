@@ -1,4 +1,4 @@
-package com.miempresa.serviceorder.dto.request.orderitem;
+package com.miempresa.serviceorder.dto.orderitem;
 
 import com.miempresa.serviceorder.model.Order;
 import lombok.AllArgsConstructor;

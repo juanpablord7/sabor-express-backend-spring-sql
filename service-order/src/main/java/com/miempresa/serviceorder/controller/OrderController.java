@@ -1,9 +1,9 @@
 package com.miempresa.serviceorder.controller;
 
 import com.miempresa.serviceorder.dto.PaginatedResponse;
-import com.miempresa.serviceorder.dto.request.order.OrderPatchRequest;
-import com.miempresa.serviceorder.dto.request.order.OrderRequest;
-import com.miempresa.serviceorder.dto.response.OrderView;
+import com.miempresa.serviceorder.dto.order.OrderPatchRequest;
+import com.miempresa.serviceorder.dto.order.OrderRequest;
+import com.miempresa.serviceorder.dto.order.OrderView;
 import com.miempresa.serviceorder.model.Order;
 import com.miempresa.serviceorder.service.OrderService;
 import jakarta.validation.Valid;

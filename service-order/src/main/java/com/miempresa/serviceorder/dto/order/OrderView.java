@@ -1,6 +1,4 @@
-package com.miempresa.serviceorder.dto.response;
-
-import lombok.*;
+package com.miempresa.serviceorder.dto.order;
 
 import java.util.Date;
 

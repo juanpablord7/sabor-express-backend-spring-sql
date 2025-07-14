@@ -12,5 +12,5 @@ import java.util.List;
 public interface ProductClient {
 
     @GetMapping("/find")
-    public List<Product> findProducts(@RequestParam String productIds);
+    List<Product> findProducts(@RequestParam String productIds);
 }

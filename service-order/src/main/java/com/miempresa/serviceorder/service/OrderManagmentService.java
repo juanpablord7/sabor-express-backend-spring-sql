@@ -1,7 +1,7 @@
 package com.miempresa.serviceorder.service;
 
 import com.miempresa.serviceorder.dto.PaginatedResponse;
-import com.miempresa.serviceorder.dto.response.OrderView;
+import com.miempresa.serviceorder.dto.order.OrderView;
 import com.miempresa.serviceorder.model.Order;
 import com.miempresa.serviceorder.repository.OrderRepository;
 import org.springframework.data.domain.Page;

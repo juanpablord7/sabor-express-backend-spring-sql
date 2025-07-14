@@ -27,7 +27,7 @@ public class ImageController {
 
     @GetMapping("/**")
     public ResponseEntity<byte[]> getImage(HttpServletRequest request) throws IOException {
-        String path = extractPath(request);
+        String path = extracutPath(request);
         Image image = imageService.getImage(path);
 
         return ResponseEntity.ok()

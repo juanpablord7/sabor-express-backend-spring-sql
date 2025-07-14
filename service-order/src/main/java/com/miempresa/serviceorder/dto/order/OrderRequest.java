@@ -1,4 +1,4 @@
-package com.miempresa.serviceorder.dto.request.order;
+package com.miempresa.serviceorder.dto.order;
 
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;

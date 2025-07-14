@@ -1,10 +1,8 @@
 package com.miempresa.serviceorder.controller;
 
-import com.miempresa.serviceorder.dto.request.state.StateRequest;
+import com.miempresa.serviceorder.dto.state.StateRequest;
 import com.miempresa.serviceorder.model.Order;
 import com.miempresa.serviceorder.service.OrderManagmentService;
-import feign.Body;
-import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

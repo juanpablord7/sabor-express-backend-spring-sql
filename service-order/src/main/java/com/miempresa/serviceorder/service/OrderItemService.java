@@ -1,15 +1,13 @@
 package com.miempresa.serviceorder.service;
 
 import com.miempresa.serviceorder.dto.PaginatedResponse;
-import com.miempresa.serviceorder.dto.request.orderitem.OrderItemRequest;
+import com.miempresa.serviceorder.dto.orderitem.OrderItemRequest;
 import com.miempresa.serviceorder.model.OrderItem;
 import com.miempresa.serviceorder.repository.OrderItemRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-
 
 @Service
 //Service to crud OrderItem, but to create the orders this is not user"

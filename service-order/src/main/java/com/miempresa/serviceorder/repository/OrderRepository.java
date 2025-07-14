@@ -1,7 +1,7 @@
 package com.miempresa.serviceorder.repository;
 
 
-import com.miempresa.serviceorder.dto.response.OrderView;
+import com.miempresa.serviceorder.dto.order.OrderView;
 import com.miempresa.serviceorder.model.Order;
 import lombok.NonNull;
 import org.springframework.data.domain.Page;

@@ -1,6 +1,7 @@
 package com.miempresa.serviceuser.controller;
 
 import com.miempresa.serviceuser.client.RoleClient;
+import com.miempresa.serviceuser.dto.login.LoginResponse;
 import com.miempresa.serviceuser.dto.user.UserRequest;
 import com.miempresa.serviceuser.dto.login.LoginRequest;
 import com.miempresa.serviceuser.dto.user.UserView;
@@ -29,11 +30,15 @@ public class AuthenticationController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> authenticate(@RequestBody LoginRequest login){
+    public ResponseEntity<LoginResponse> authenticate(@RequestBody LoginRequest login){
 
         String token = userService.login(login.getUsername(), login.getEmail(), login.getPassword());
 
-        return ResponseEntity.ok(token);
+        LoginResponse response = LoginResponse.builder()
+                .jwt(token)
+                .build();
+
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/register")
