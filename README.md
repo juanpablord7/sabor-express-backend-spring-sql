@@ -380,11 +380,11 @@ java -jar service-user.jar
 ## API / Connections
 
 ### 🛠️ Configuration
-- Puerto por defecto: 8080 - Sirve el frontend y gestiona todas las solicitudes de la aplicación.
-- Base URL de la API: http://localhost:8080/api
-- Autenticación: Basada en JWT (token enviado en cada solicitud protegida)
+- Default port: 8080 – Serves the frontend and handles all application requests.
+- API base URL: http://localhost:8080/api
+- Authentication: JWT-based (token sent with each protected request)
 - ORM: Hibernate + Spring Data JPA
-- Base de datos: MySQL (administrado con SQL Server Management)
+- Database: MySQL (managed using SQL Server Management)
 
 ### 🔑 Common Headers
 
@@ -742,4 +742,4 @@ Content-Type: application/json
 
 
 ## Author
-Juan Pablo Roman (Juanpablord)
+Juan Pablo Roman (Juanpablord7)
