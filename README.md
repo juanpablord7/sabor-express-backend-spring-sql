@@ -280,7 +280,7 @@ This backend was built with the goal of learning and applying key concepts of mo
 # ==================================================
 
 # Clone the repository
-git clone https://github.com/your-username/project-name.git
+git clone https://github.com/juanpablord7/sabor-express-backend-spring-sql
 
 # Enter the project directory
 cd project-name
@@ -322,7 +322,7 @@ mvnw -pl service-user spring-boot:run
 
 # 🧱 Step 1: Build the Frontend
 
-# Go into the frontend directory
+# Go into the frontend directory (You can find it here: https://github.com/juanpablord7/sabor-express-frontend-react)
 cd frontend-directory
 
 # Install dependencies
